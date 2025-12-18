@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+
+    </style>
+</head>
+<body >
+
+    <div id="wrapper">
+        <form>
+            <input type="text"  id="username" name="username" placeholder="Enter your name" required>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            <input type="text" id="first_name" name="first_name" placeholder="Enter your first name" required>
+            <input type="text" id="last_name" name="last_name" placeholder="Enter your last name" required>
+            <button type="submit" onclick="submitForm(event)">Submit</button>
+            <button onclick="getUsers()">Get users</button>
+            <button type="button" onclick="showLogin()">Login (JWT)</button>
+            <button type="button" onclick="getProtected()" id="protectedBtn" style="display:none;">Get Protected</button>
+        </form>
+        <div id="container"></div>
+        <div id="loginModal" style="display:none; position:fixed; top:20%; left:40%; background:#fff; border:1px solid #ccc; padding:20px; z-index:1000;">
+            <h3>Login (JWT)</h3>
+            <input type="text" id="loginUsername" placeholder="Username" required><br>
+            <input type="password" id="loginPassword" placeholder="Password" required><br>
+            <button onclick="loginJWT()">Login</button>
+            <button onclick="hideLogin()">Cancel</button>
+            <div id="loginResult"></div>
+        </div>
+
+    </div>
+    <div id="individual">
+    </div>
+    <button id="btn">back</button>
+
+
+    <script>
+         let btn = document.getElementById('btn')
+        btn.addEventListener('click', ()=>{
+                 let wrapper = document.querySelector("#wrapper")
+
+                wrapper.style.display = 'block'
+                console.log('hello')
+        })
+    </script>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.9.0/axios.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        API= 'http://127.0.0.1:8000'
+        let loading = false;
+        let jwtToken = localStorage.getItem('access') || '';
+
+        function showLogin() {
+            document.getElementById('loginModal').style.display = 'block';
+        }
+        function hideLogin() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        async function loginJWT() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                const res = await axios.post(`${API}/auth/token/`, { username, password });
+                localStorage.setItem('access', res.data.access);
+                if (res.data.refresh) localStorage.setItem('refresh', res.data.refresh);
+                jwtToken = res.data.access;
+                document.getElementById('loginResult').innerText = 'Login successful!';
+                document.getElementById('protectedBtn').style.display = 'inline';
+                hideLogin();
+            } catch (err) {
+                document.getElementById('loginResult').innerText = 'Login failed!';
+            }
+        }
+
+        async function getProtected() {
+            const token = localStorage.getItem('access');
+            if (!token) {
+                alert('Please login first!');
+                return;
+            }
+            try {
+                const res = await axios.get(`${API}/api/protected/`, {
+                    headers: { Authorization: 'Bearer ' + token }
+                });
+                alert('Protected data: ' + JSON.stringify(res.data));
+            } catch (err) {
+                alert('Access denied or token expired!');
+            }
+        }
+
+        function checkAuth() {
+            if (localStorage.getItem('access')) {
+                document.getElementById('protectedBtn').style.display = 'inline';
+            } else {
+                document.getElementById('protectedBtn').style.display = 'none';
+            }
+        }
+
+        async function submitForm(event) {
+            loading = true;
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const first_name = document.getElementById('first_name').value;
+            const last_name = document.getElementById('last_name').value;
+
+            try {
+                const response = await axios.post(`${API}/auth/signup/`, {
+                    username,
+                    email,
+                    password,
+                    first_name,
+                    last_name
+                });
+                // Expect tokens in response (access, refresh)
+                if (response.data.access) {
+                    localStorage.setItem('access', response.data.access);
+                }
+                if (response.data.refresh) {
+                    localStorage.setItem('refresh', response.data.refresh);
+                }
+                jwtToken = response.data.access || '';
+                loading = false;
+                document.getElementById('protectedBtn').style.display = 'inline';
+                alert('Signed up successfully and tokens stored.');
+            } catch (error) {
+                console.error(error);
+                loading = false;
+                alert('Error creating user: ' + (error.response?.data?.detail || 'Unknown error'));
+            }
+        }
+
+        async function getUsers() {
+            await axios.get('http://127.0.0.1:8000/api/users/')
+            .then(function (response) {
+                let users = response.data;
+                const container = document.getElementById('container');
+                container.innerHTML = '';
+                users.map((users, index, arr) => {
+                    container.innerHTML += `<div key=${index}>${users.username} - ${users.email} - ${users.first_name} - ${users.last_name}</div>
+                    <button onclick="getIndividual('${users.id}')">Get Individual</button>
+                    <button onclick="updateUser(event, '${users.id}')">Update</button>
+                    <button onclick="deleteUser('${users.id}')">Delete</button>`
+                });
+                console.log(response.data);
+            }).catch(function (error) {
+                console.error(error);
+                alert('Error fetching users: ' + (error.response?.data?.detail || 'Unknown error'));
+            });
+        }
+
+        async function getIndividual(id) {
+            await axios.get(`http://127.0.0.1:8000/api/users/${id}/`)
+            .then(function (response) {
+                let user = response.data
+
+                let container = document.getElementById('individual')
+                let wrapper = document.querySelector("#wrapper")
+
+                wrapper.style.display = 'none'
+
+                container.innerHTML = user.username
+
+                console.log(response.data);
+            }).catch(function (error) {
+                console.error(error);
+            });
+        }
+    
+
+       
+
+        async function updateUser(event, id) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const first_name = document.getElementById('first_name').value;
+            const last_name = document.getElementById('last_name').value;
+            await axios.put(`http://127.0.0.1:8000/api/users/${id}/`, {
+                username,
+                email,
+                password,
+                first_name,
+                last_name
+            })
+            .then(function (response) {
+                console.log(response.data);
+            }).catch(function (error) {
+                console.error(error);
+            });
+        }
+
+        async function deleteUser(id) {
+            await axios.delete(`http://127.0.0.1:8000/api/users/${id}/`)
+            .then(function (response) {
+                console.log(response.data);
+            }).catch(function (error) {
+                console.error(error);
+            });
+        }
+
+        // initialize auth state
+        checkAuth();
+
+        // json web token
+
+        // access_token  - 234567hgfdsasdfg   //  short live/durtion 5-min
+        // refresh_token -ghjklkjiuokjhgfrtdfyuio // long duration/live
+
+
+       
+    </script>
+</body>
+</html>
