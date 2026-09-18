@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {% for post in posts %}
+        <div>
+            <h2>{{ post.title }}</h2>
+            <p>{{ post.description }}</p>
+            <img src="{{ post.image.url }}" width="200" alt="{{ post.title }}">
+            <a href="/profile/{{ post.id }}/">View Details</a> 
+            <a href="/profile/{{ post.id }}/edit/">Edit Profile</a>
+        </div>
+    {% endfor %}
+</body>
+</html>
