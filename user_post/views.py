@@ -31,3 +31,9 @@ def profile_edit(request, id):
     else:
         form = User_postForm(instance=post)
     return render(request, 'profile_edit.html', {'form': form})
+
+
+def profile_delete(request, id):
+    post = User_post.objects.get(id=id)
+    post.delete()
+    return redirect('profile_views')
