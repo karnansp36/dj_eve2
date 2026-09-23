@@ -12,6 +12,7 @@ def user_post(request):
     return render(request, 'user_post.html', {'form': User_postForm()})
 
 
+
 def profile_views(request):
     posts = User_post.objects.all()
     return render(request, 'profile.html', {'posts': posts})
