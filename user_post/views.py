@@ -1,7 +1,10 @@
 from django.shortcuts import render, redirect
 from .forms import User_postForm
+from .utils import auth_required
 # Create your views here.
 from .models import User_post
+
+@auth_required
 def user_post(request):
     if request.method == 'POST':
         form = User_postForm(request.POST, request.FILES)
@@ -12,7 +15,7 @@ def user_post(request):
     return render(request, 'user_post.html', {'form': User_postForm()})
 
 
-
+@auth_required
 def profile_views(request):
     posts = User_post.objects.all()
     return render(request, 'profile.html', {'posts': posts})
